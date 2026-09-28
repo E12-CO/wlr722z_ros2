@@ -218,11 +218,12 @@ class wlr722z_if : public rclcpp::Node{
 	// Pointer
 	uint32_t *p32RangeIntensityPairPtr;
 	
-	float f32LaserMinAngle;
-	float f32LaserMaxAngle;
-	float f32LaserScanResolution;
-	uint16_t u16LaserPointCount;
-	
+	// IMU zero motion calibration
+	bool bIsGyroCalibrated = false;
+	double f64GyroXAccumu = 0.0;
+	double f64GyroYAccumu = 0.0;
+	double f64GyroZAccumu = 0.0;
+	uint16_t u16GyroCalSampleCnt = 0;
 	
 	// FSM
 	uint8_t u8LaserFSM;
@@ -237,7 +238,7 @@ class wlr722z_if : public rclcpp::Node{
 		declare_parameter("serial_port", "/dev/ttyACM0");
 		get_parameter("serial_port", strSerialPort);
 		
-		declare_parameter("laser_frame_id", "laser_frame");
+		declare_parameter("laser_frame_id", "laser");
 		get_parameter("laser_frame_id", strLaserFrameId);
 		
 		declare_parameter("cloud_topic", "cloud");
@@ -316,7 +317,7 @@ class wlr722z_if : public rclcpp::Node{
 
 		// Setup basics data in the laser message
 		// Publish every one scan revolution
-		msgCloud.header.frame_id 	= strLaserFrameId;
+		msgCloud.header.frame_id 	= strLaserFrameId + "_cloud";
 		msgCloud.height				= 1;// Each scan message is a single slice
 		msgCloud.width				= POINTS_PER_SCAN;// Each scan contains 9600 points
 		
@@ -339,7 +340,7 @@ class wlr722z_if : public rclcpp::Node{
 		
 		
 		// Setup IMU message
-		msgImu.header.frame_id		= "laser_imu";
+		msgImu.header.frame_id		= strLaserFrameId + "_imu";
 		// Orientation
 		msgImu.orientation.x		= 0.0;
 		msgImu.orientation.y		= 0.0;
@@ -435,6 +436,11 @@ class wlr722z_if : public rclcpp::Node{
 		RCLCPP_INFO(
 			this->get_logger(),
 			"Starting RS-485 thread"
+		);
+		
+		RCLCPP_INFO(
+			this->get_logger(),
+			"Please stay stil for 5 seconds for IMU offset calibration"
 		);
 		
 		// Sync with header
@@ -793,8 +799,31 @@ class wlr722z_if : public rclcpp::Node{
 		msgImu.angular_velocity.z = 
 			((double)(((tLaserDataImu *)&u8LaserBuffer[0])->tImuData.i16Gyro_z) / 32.8) * DEG_TO_RADS_COSNT;
 				
-		msgImu.header.stamp = this->get_clock()->now();
-		pubImu->publish(msgImu);
+		if(bIsGyroCalibrated == false){
+			f64GyroXAccumu += msgImu.angular_velocity.x;
+			f64GyroYAccumu += msgImu.angular_velocity.y;
+			f64GyroZAccumu += msgImu.angular_velocity.z;
+			u16GyroCalSampleCnt++;
+			
+			if(u16GyroCalSampleCnt == 1000){
+				u16GyroCalSampleCnt = 0;
+				bIsGyroCalibrated = true;
+				f64GyroXAccumu = f64GyroXAccumu/1000.0;
+				f64GyroYAccumu = f64GyroYAccumu/1000.0;
+				f64GyroZAccumu = f64GyroZAccumu/1000.0;
+				RCLCPP_INFO(
+					this->get_logger(),
+					"IMU calibration done!"
+				);
+			}
+		}else{	
+			msgImu.angular_velocity.x -= f64GyroXAccumu;
+			msgImu.angular_velocity.y -= f64GyroYAccumu;
+			msgImu.angular_velocity.z -= f64GyroZAccumu;
+			
+			msgImu.header.stamp = this->get_clock()->now();
+			pubImu->publish(msgImu);
+		}
 	}
 
 	void wlr722z_publishCloudMsg(){
@@ -814,7 +843,7 @@ class wlr722z_if : public rclcpp::Node{
 		for(; iterPCL != iterPCL.end(); ++iterPCL){			
 			f32Range = ((double)(((tLaserDataPointCloud *)&u8LaserBuffer[0])->tCloudData.sLaserData[u8Ring].u16Distance) * 0.002);
 					
-			iterPCL[0] = f32Range * cos(f64Azimuth + f64HorizontalOffset[u8Ring]) * cos(f64VerticalAngle[u8Ring]);// X
+			iterPCL[0] = -f32Range * cos(f64Azimuth + f64HorizontalOffset[u8Ring]) * cos(f64VerticalAngle[u8Ring]);// X
 			iterPCL[1] = f32Range * sin(f64Azimuth + f64HorizontalOffset[u8Ring]) * cos(f64VerticalAngle[u8Ring]);// Y
 			iterPCL[2] = f32Range * sin(f64VerticalAngle[u8Ring]);// Z
 			iterPCL[3] = (double)(((tLaserDataPointCloud *)&u8LaserBuffer[0])->tCloudData.sLaserData[u8Ring].u8Intensity) / 255.0;

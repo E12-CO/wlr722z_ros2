@@ -471,19 +471,6 @@ class wlr722z_if : public rclcpp::Node{
 				"Received %d bytes",
 				ret
 			);
-			
-			std::ostringstream oss;
-			oss << "RX [" << ret << " bytes]: "
-				<< std::hex << std::setfill('0');
-
-			for (size_t i = 0; i < ret; ++i)
-			{
-				oss << std::setw(2)
-					<< static_cast<unsigned int>(u8SerialRxBuffer[i])
-					<< " ";
-			}
-
-			RCLCPP_DEBUG_STREAM(this->get_logger(), oss.str());
 
 			lSearch:
 			if(bFullHeaderMatch == false){// Only search when no match is previously found
@@ -593,9 +580,22 @@ class wlr722z_if : public rclcpp::Node{
 						
 						RCLCPP_ERROR(
 							this->get_logger(),
-							"Error unknow data type 0x%02X, Skipping this pkt!",
-							u8DataType
+							"Error unknow data type 0x%02X at %d, Skipping this pkt!",
+							u8DataType, u16SearchStartPos + 2
 						);
+						
+						std::ostringstream oss;
+						oss << "RX [" << ret << " bytes]: "
+							<< std::hex << std::setfill('0');
+
+						for (size_t i = 0; i < ret; ++i)
+						{
+							oss << std::setw(2)
+								<< static_cast<unsigned int>(u8SerialRxBuffer[i])
+								<< " ";
+						}
+
+						RCLCPP_ERROR_STREAM(this->get_logger(), oss.str());
 						
 						bFullHeaderMatch = false;
 						u16SearchStartPos = 0;
@@ -719,10 +719,10 @@ class wlr722z_if : public rclcpp::Node{
 						
 						RCLCPP_ERROR(
 							this->get_logger(),
-							"Error unknow data type 0x%02X, Skipping this pkt!",
-							u8DataType
+							"Error unknow data type 0x%02X at %d, Skipping this pkt!",
+							u8DataType, u16LaserHeaderNextCyclOffset
 						);
-						
+
 						goto lWait;
 					}
 					
@@ -842,7 +842,10 @@ class wlr722z_if : public rclcpp::Node{
 
 		for(; iterPCL != iterPCL.end(); ++iterPCL){			
 			f32Range = ((double)(((tLaserDataPointCloud *)&u8LaserBuffer[0])->tCloudData.sLaserData[u8Ring].u16Distance) * 0.002);
-					
+			if(f32Range < 0.2){
+				f32Range = NAN;
+			}	
+			
 			iterPCL[0] = -f32Range * cos(f64Azimuth + f64HorizontalOffset[u8Ring]) * cos(f64VerticalAngle[u8Ring]);// X
 			iterPCL[1] = f32Range * sin(f64Azimuth + f64HorizontalOffset[u8Ring]) * cos(f64VerticalAngle[u8Ring]);// Y
 			iterPCL[2] = f32Range * sin(f64VerticalAngle[u8Ring]);// Z

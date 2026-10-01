@@ -11,7 +11,14 @@ def generate_launch_description():
 
     pkg_name = 'wlr722z_ros2'
     
-    hinson_de4511_instant = launch_ros.actions.Node(
+    param_dir = launch.substitutions.LaunchConfiguration(
+        'param_dir',
+        default=os.path.join(
+            get_package_share_directory(pkg_name),
+            'params',
+            'lidar.yaml'))
+    
+    wlr722z_instant = launch_ros.actions.Node(
         package=pkg_name,
         executable='wlr_node',
         output='screen',
@@ -19,5 +26,9 @@ def generate_launch_description():
     )
     
     return launch.LaunchDescription([
-        hinson_de4511_instant,
+        launch.actions.DeclareLaunchArgument(
+            'wlr722z_param_dir',
+            default_value=param_dir,
+            description='Full path to main parameter file to load'),
+        wlr722z_instant,
     ])

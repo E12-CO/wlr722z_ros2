@@ -112,7 +112,6 @@ class wlr722z_if : public rclcpp::Node{
 	uint8_t u8TcpTxBuffer[50];
 	// Rx buffer
 	uint8_t u8SerialRxBuffer[128];
-	uint8_t u8SerialBufL2[2048];
 	uint8_t u8LaserBuffer[100];
 	int i32RxByteCount;
 	
@@ -501,7 +500,7 @@ class wlr722z_if : public rclcpp::Node{
 		lWait:		
 		
 			// Clear buffer before receive again
-			memset(u8SerialRxBuffer, 0, 2048);
+			memset(u8SerialRxBuffer, 0, 128);
 
 			ret = read(
 				i32SerialFd, 

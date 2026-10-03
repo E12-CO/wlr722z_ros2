@@ -11,7 +11,5 @@ Run :
 ```ros2 launch wlr722z_ros2 wlr722z.launch.py```
 
 # TODO
-- Add parameter file
-- Slow down the pointcloud publish rate to 10s Hz range
-- Add the checksum checking
 - Add the parameter query
+- Improve the communication side to reduce error rate. Possibly need 25MHz XTAL on STM32 to match 3.125MBaud rate of th Lidar.

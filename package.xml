@@ -13,6 +13,8 @@
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
   <depend>sensor_msgs</depend>
+  <depend>pcl_conversion</depend>
+  <depend>pcl_msgs</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

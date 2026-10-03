@@ -11,10 +11,23 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(sensor_msgs REQUIRED)
 
+#PCL
+find_package(PCL REQUIRED)
+find_package(pcl_conversions REQUIRED)
+
 set(wlr_dependencies
 	rclcpp
 	rclcpp_components
 	sensor_msgs
+	pcl_msgs
+	pcl_conversions
+)
+
+include_directories(
+  ${PCL_INCLUDE_DIRS}
+)
+link_directories(
+  ${PCL_LIBRARY_DIRS}
 )
 
 add_executable(wlr_node
@@ -23,6 +36,7 @@ add_executable(wlr_node
 
 target_link_libraries(
 	wlr_node
+	${PCL_LIBRARIES} 
 )
 
 ament_target_dependencies(

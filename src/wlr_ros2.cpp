@@ -344,11 +344,6 @@ class wlr722z_if : public rclcpp::Node{
 		// Points rate -> 16 * 600 * 5 = 48000 points/sec
 
 		// Setup basics data in the laser message
-		// Publish every one scan revolution
-		msgCloud.header.frame_id 	= strLaserFrameId + "_cloud";
-		msgCloud.height				= 1;// Each scan message is a single slice
-		msgCloud.width				= POINTS_PER_SCAN;// Each scan contains 9600 points
-		
 		sensor_msgs::PointCloud2Modifier pcl2Modifier(msgCloud);
 		
 		pcl2Modifier.setPointCloud2Fields(
@@ -360,12 +355,6 @@ class wlr722z_if : public rclcpp::Node{
 			"ring", 1, sensor_msgs::msg::PointField::UINT32
 		);
 		
-		msgCloud.is_bigendian 		= false;
-		msgCloud.point_step			= 20;// Four float32 and on uint16
-		msgCloud.row_step			= msgCloud.width * msgCloud.point_step;
-		
-		msgCloud.is_dense			= false;
-
 		// Setup IMU message
 		msgImu.header.frame_id		= strLaserFrameId + "_imu";
 		// Orientation
@@ -967,6 +956,10 @@ class wlr722z_if : public rclcpp::Node{
 			pcl::toROSMsg(accumuCloud, msgCloud);
 			msgCloud.header.stamp = this->get_clock()->now();
 			msgCloud.header.frame_id 	= strLaserFrameId + "_cloud";
+			msgCloud.height				= 1;// Each scan message is a single slice
+			msgCloud.is_bigendian 		= false;
+			msgCloud.is_dense			= false;
+			
 			pubCloudScan->publish(msgCloud);
 			accumuCloud.clear();
 		}

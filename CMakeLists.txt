@@ -50,7 +50,7 @@ install(
 )
 
 install(
-	DIRECTORY params launch
+	DIRECTORY description params launch
 	DESTINATION share/${PROJECT_NAME}
 )
 

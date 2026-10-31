@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="r1">
+	
+    <material name="white">
+        <color rgba="1 1 1 1"/>		
+    </material>
+
+    <material name="orange">
+		<color rgba="1 0.3 0.1 1"/>
+    </material>
+
+    <material name="blue">
+		<color rgba="0.2 0.2 1 1"/>
+    </material>
+
+    <material name="black">
+		<color rgba="0 0 0 1"/>
+    </material>
+	
+	<material name="red">
+		<color rgba="0.8 0.0 0.0 1"/>
+	</material>
+
+	<material name="green">
+		<color rgba="0.0 0.8 0.0 1"/>
+	</material>
+
+    <!-- BASE LINK -->
+
+    <link name="base_link" />
+	
+	<link name="laser_frame" />
+
+	<joint name="laser_joint" type="fixed">
+		<parent link="base_link"/>
+		<child link="laser_frame"/>
+		<origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
+	</joint>
+	
+    <link name="laser_cloud">
+		<visual>
+			<geometry>
+			<box size="0.06 0.06 0.06"/>
+		  </geometry>
+		</visual>
+	</link>
+    
+	<joint name="wlr_lidar_joint" type="fixed">
+		<parent link="laser_frame"/>
+		<child link="laser_cloud"/>
+		<origin xyz="0.0 0.0 0.04463" rpy="0 0 0"/>
+	</joint>
+
+	<link name="laser_imu">
+		<visual>
+		  <geometry>
+			<box size="0.01 0.01 0.01"/>
+		  </geometry>
+		</visual>
+	</link>
+
+	<joint name="laser_imu_joint" type="fixed">
+		<parent link="laser_frame"/>
+		<child link="laser_imu"/>
+		<origin xyz="-0.0125 -0.01699 0.00757" rpy="0 0 0"/>
+	</joint>
+
+</robot>

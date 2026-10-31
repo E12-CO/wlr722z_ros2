@@ -59,6 +59,8 @@
 #define DEG_TO_RADS_COSNT		0.0174533
 #define DEG_TO_RADS(x)			(x * DEG_TO_RADS_COSNT)
 
+#define OPTICAL_OFFSET_Z		7.95e-3
+#define OPTICAL_OFFSET_XY		2.067e-2		
 
 struct VelodynePointXYZIR {
 	PCL_ADD_POINT4D
@@ -904,7 +906,8 @@ class wlr722z_if : public rclcpp::Node{
 				f64GyroZAccumu = f64GyroZAccumu/1000.0;
 				RCLCPP_INFO(
 					this->get_logger(),
-					"IMU calibration done!"
+					"IMU calibration done\n x bias %.4f\ny bias %.4f\n z bias %.4f",
+					f64GyroXAccumu, f64GyroYAccumu, f64GyroZAccumu
 				);
 			}
 		}else{	
@@ -939,9 +942,9 @@ class wlr722z_if : public rclcpp::Node{
 			
 			VelodynePointXYZIR pointAdd;
 			
-			pointAdd.x = -f32Range * cos(f64Azimuth + f64HorizontalOffset[u8Ring]) * cos(f64VerticalAngle[u8Ring]);// X
-			pointAdd.y = f32Range * sin(f64Azimuth + f64HorizontalOffset[u8Ring]) * cos(f64VerticalAngle[u8Ring]);// Y
-			pointAdd.z = f32Range * sin(f64VerticalAngle[u8Ring]);// Z
+			pointAdd.x = -f32Range * cos(f64Azimuth + f64HorizontalOffset[u8Ring]) * cos(f64VerticalAngle[u8Ring]) - (OPTICAL_OFFSET_XY * cos(f64Azimuth));// X
+			pointAdd.y = f32Range * sin(f64Azimuth + f64HorizontalOffset[u8Ring]) * cos(f64VerticalAngle[u8Ring]) + (OPTICAL_OFFSET_XY * sin(f64Azimuth));// Y
+			pointAdd.z = f32Range * sin(f64VerticalAngle[u8Ring]) + OPTICAL_OFFSET_Z;// Z
 			pointAdd.intensity = (double)(((tLaserDataPointCloud *)&u8LaserBuffer[0])->tCloudData.sLaserData[u8Ring].u8Intensity) / 255.0;
 			pointAdd.ring = u8Ring;
 			
